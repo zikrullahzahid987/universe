@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>Our Universe</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Dancing+Script:wght@700&display=swap');
+
+        body { margin: 0; overflow: hidden; background-color: #000; touch-action: none; }
+
+        #overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            text-align: center; color: white; z-index: 10; pointer-events: none; padding: 20px; box-sizing: border-box;
+        }
+
+        .fade-text { opacity: 0; transition: opacity 2.5s ease-in-out; position: absolute; width: 90%; max-width: 800px; }
+        .visible { opacity: 1; }
+        .hidden { opacity: 0 !important; }
+
+        #countdown { font-family: 'Cinzel', serif; font-size: 8rem; font-weight: 700; color: #ffb3c6; }
+        #birthday-title { font-family: 'Dancing Script', cursive; font-size: 5rem; color: #ffffff; text-shadow: 0 0 20px rgba(255,255,255, 0.8); line-height: 1.2; }
+        #love-note { font-family: 'Cinzel', serif; font-size: 1.5rem; line-height: 1.8; color: #f0f0f0; }
+        #instruction { font-family: 'Cinzel', serif; font-size: 1.1rem; color: #ffb3c6; margin-top: 40px; letter-spacing: 2px; }
+        
+        #moon-secret {
+            position: absolute; bottom: 15%; width: 100%; text-align: center;
+            font-family: 'Dancing Script', cursive; font-size: 2.5rem; color: #ffb3c6;
+            text-shadow: 0 0 20px rgba(255, 179, 198, 0.8); opacity: 0; transition: opacity 1.5s ease;
+            pointer-events: none; z-index: 20; padding: 0 20px; box-sizing: border-box;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+    <div id="overlay">
+        <div id="countdown" class="fade-text visible">10</div>
+        <div id="birthday-group" class="fade-text"><div id="birthday-title">Happy Birthday<br>Rawabi</div></div>
+        <div id="love-note-group" class="fade-text">
+            <div id="love-note">
+                I love you more than words can say. You make me happier than I ever imagined possible, and my only wish is to grow old by your side.
+                <br><br>
+                Since I can't give you the world today, I built you a universe.
+                <div id="instruction">Pinch to zoom. Drag to explore. Find Earth.</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="moon-secret">
+        "I am nothing in beauty compared to you." <br><br> <span style="font-family: 'Cinzel', serif; font-size: 1.2rem; color: #fff;">(And Zikr was always right)</span>
+    </div>
+
+    <script>
+        let currentState = 'COUNTDOWN'; 
+        const countdownEl = document.getElementById('countdown');
+        const birthdayGroup = document.getElementById('birthday-group');
+        const loveNoteGroup = document.getElementById('love-note-group');
+        const moonSecretEl = document.getElementById('moon-secret');
+        const overlayContainer = document.getElementById('overlay');
+
+        let countVal = 10;
+        const countdownInterval = setInterval(() => {
+            countVal--;
+            if (countVal > 0) { countdownEl.innerText = countVal; } 
+            else { clearInterval(countdownInterval); runSequence(); }
+        }, 1000);
+
+        function runSequence() {
+            countdownEl.classList.remove('visible');
+            setTimeout(() => {
+                birthdayGroup.classList.add('visible');
+                currentState = 'BIRTHDAY';
+                setTimeout(() => {
+                    birthdayGroup.classList.remove('visible');
+                    setTimeout(() => {
+                        loveNoteGroup.classList.add('visible');
+                        currentState = 'INTRO';
+                        setTimeout(() => {
+                            loveNoteGroup.classList.add('hidden');
+                            overlayContainer.style.pointerEvents = 'none'; 
+                            controls.enabled = true; 
+                            currentState = 'EXPLORE';
+                        }, 9000); 
+                    }, 2000);
+                }, 4000); 
+            }, 2000);
+        }
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 1, 40000);
+        camera.position.set(0, 500, 3500); 
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); 
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true; controls.dampingFactor = 0.05;
+        controls.minDistance = 600; controls.maxDistance = 20000; controls.enabled = false; 
+
+        // TEXTURE LOADER
+        const textureLoader = new THREE.TextureLoader();
+        const earthTexture = textureLoader.load('earth.jpg');
+        const moonTexture = textureLoader.load('moon.jpg');
+        const sunTexture = textureLoader.load('sun.jpg');
+        const glowTexture = textureLoader.load('glow.png');
+
+        // LIGHTING
+        const ambientLight = new THREE.AmbientLight(0x333344);
+        scene.add(ambientLight);
+        
+        // SUN (Center of the solar system)
+        const sunGeo = new THREE.SphereGeometry(600, 64, 64);
+        const sunMat = new THREE.MeshBasicMaterial({ map: sunTexture }); // Basic material so it doesn't need light to be seen
+        const sun = new THREE.Mesh(sunGeo, sunMat);
+        scene.add(sun);
+
+        // Sunlight radiating outward
+        const sunLight = new THREE.PointLight(0xffffff, 2, 25000);
+        scene.add(sunLight);
+
+        // SHINY STARS (Using the glow.png sprite you download)
+        const starsGeometry = new THREE.BufferGeometry();
+        const starsCount = 15000;
+        const posArray = new Float32Array(starsCount * 3);
+        
+        for(let i = 0; i < starsCount * 3; i++) {
+            posArray[i] = (Math.random() - 0.5) * 30000;
+        }
+        starsGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+
+        const starsMaterial = new THREE.PointsMaterial({
+            size: 80, map: glowTexture, transparent: true, opacity: 0.8,
+            blending: THREE.AdditiveBlending, depthWrite: false
+        });
+        const starField = new THREE.Points(starsGeometry, starsMaterial);
+        scene.add(starField);
+
+        // THE EARTH & MOON SYSTEM
+        const earthSystem = new THREE.Group();
+        // Positioned far away so she has to zoom into it
+        earthSystem.position.set(2500, 0, 2500); 
+        
+        const earthGeo = new THREE.SphereGeometry(250, 64, 64);
+        const earthMat = new THREE.MeshStandardMaterial({ map: earthTexture, roughness: 0.6 });
+        const earth = new THREE.Mesh(earthGeo, earthMat);
+        earthSystem.add(earth);
+
+        const realMoonGeo = new THREE.SphereGeometry(70, 32, 32);
+        const realMoonMat = new THREE.MeshStandardMaterial({ map: moonTexture, roughness: 0.9 });
+        const realMoon = new THREE.Mesh(realMoonGeo, realMoonMat);
+        earthSystem.add(realMoon);
+
+        scene.add(earthSystem);
+
+        // ANIMATION LOOP
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const elapsedTime = clock.getElapsedTime();
+
+            starField.rotation.y += 0.0001;
+            sun.rotation.y += 0.001;
+            
+            // Earth rotating on its axis
+            earth.rotation.y += 0.002;
+
+            // Moon orbiting Earth
+            realMoon.position.x = Math.cos(elapsedTime * 0.5) * 600;
+            realMoon.position.z = Math.sin(elapsedTime * 0.5) * 600;
+            realMoon.rotation.y += 0.005;
+
+            // Earth orbiting the Sun
+            earthSystem.position.x = Math.cos(elapsedTime * 0.1) * 3500;
+            earthSystem.position.z = Math.sin(elapsedTime * 0.1) * 3500;
+
+            if (currentState === 'EXPLORE') {
+                // Trigger the message when she zooms into the Earth/Moon
+                const distanceToEarth = camera.position.distanceTo(earthSystem.position);
+                const triggerDistance = 2000; 
+
+                if (distanceToEarth < triggerDistance) {
+                    let opacity = 1 - ((distanceToEarth - controls.minDistance) / (triggerDistance - controls.minDistance));
+                    opacity = Math.max(0, Math.min(1, opacity)); 
+                    moonSecretEl.style.opacity = opacity;
+                } else {
+                    moonSecretEl.style.opacity = 0;
+                }
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>
